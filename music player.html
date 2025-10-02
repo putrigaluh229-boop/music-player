@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nely Player – Musik Pastel</title>
+
+<!-- Font Bubblegum Sans -->
+<link href="https://fonts.googleapis.com/css2?family=Bubblegum+Sans&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#fef6ff;
+  --primary:#ffd1dc;
+  --secondary:#c1f0f6;
+  --accent:#f6c1e1;
+  --text:#5a3a4c;
+  --shadow:rgba(0,0,0,0.15);
+
+  --dark-bg:#2c2c34;
+  --dark-card:#3a3a42;
+  --dark-text:#f5f5f5;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Bubblegum Sans',cursive;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;justify-content:center;align-items:center;
+  height:100vh;
+  transition:0.5s;
+}
+
+.container{
+  background:rgba(255,255,255,0.9);
+  padding:25px;
+  border-radius:25px;
+  box-shadow:0 8px 20px var(--shadow);
+  width:340px;
+  text-align:center;
+  transition:0.5s;
+}
+
+h1{
+  font-size:2rem;
+  color:var(--accent);
+  margin-bottom:10px;
+}
+
+.cover{
+  width:180px;
+  height:180px;
+  border-radius:50%;
+  margin:15px auto;
+  border:8px solid var(--secondary);
+  background-size:cover;
+  background-position:center;
+  animation:spin 6s linear infinite paused;
+}
+
+.playing .cover{
+  animation-play-state:running;
+}
+
+@keyframes spin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+audio{display:none;}
+
+.controls{
+  display:flex;
+  justify-content:center;
+  gap:15px;
+  margin:15px 0;
+}
+
+button{
+  background:var(--primary);
+  border:none;
+  border-radius:50%;
+  width:50px;
+  height:50px;
+  font-size:1.2rem;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+button:hover{background:#f8b9c6;transform:scale(1.1);}
+
+.extra-controls{
+  display:flex;
+  justify-content:space-around;
+  margin:10px 0;
+}
+
+.progress-container{
+  width:100%;
+  height:8px;
+  background:var(--secondary);
+  border-radius:4px;
+  cursor:pointer;
+  margin:10px 0;
+}
+
+.progress{
+  height:100%;
+  background:var(--accent);
+  border-radius:4px;
+  width:0%;
+}
+
+.time{
+  display:flex;
+  justify-content:space-between;
+  font-size:0.9rem;
+}
+
+.volume-container{
+  margin:10px 0;
+}
+
+.volume-container input{
+  width:100%;
+}
+
+.search-bar input{
+  width:100%;
+  padding:6px 10px;
+  border:2px solid var(--accent);
+  border-radius:20px;
+  margin-bottom:10px;
+  outline:none;
+}
+
+.playlist{
+  text-align:left;
+  max-height:140px;
+  overflow-y:auto;
+}
+
+.playlist-item{
+  padding:6px 10px;
+  border-radius:12px;
+  margin-bottom:6px;
+  background:var(--secondary);
+  cursor:pointer;
+  transition:0.3s;
+}
+
+.playlist-item:hover{
+  background:#a6e3ec;
+}
+
+.playlist-item.active{
+  background:var(--accent);
+  color:white;
+}
+
+.theme-toggle{
+  margin-top:10px;
+  padding:6px 12px;
+  background:var(--secondary);
+  border:none;
+  border-radius:20px;
+  cursor:pointer;
+}
+
+.dark-mode{
+  background:var(--dark-bg);
+  color:var(--dark-text);
+}
+
+.dark-mode .container{
+  background:var(--dark-card);
+}
+
+.dark-mode .playlist-item{
+  background:#444;
+  color:#eee;
+}
+
+.dark-mode .playlist-item.active{
+  background:var(--accent);
+  color:#fff;
+}
+
+</style>
+</head>
+<body>
+
+<div class="container" id="playerContainer">
+  <h1>🎵 Nely Player 🎵</h1>
+  <div class="cover" id="cover" style="background-image:url('cover1.jpg')"></div>
+  <audio id="audio"></audio>
+
+  <div class="controls">
+    <button id="prevBtn">⏮️</button>
+    <button id="playPauseBtn">▶️</button>
+    <button id="nextBtn">⏭️</button>
+  </div>
+
+  <div class="extra-controls">
+    <button id="shuffleBtn">🔀</button>
+    <button id="repeatBtn">🔁</button>
+  </div>
+
+  <div class="progress-container" id="progressContainer">
+    <div class="progress" id="progress"></div>
+  </div>
+  <div class="time">
+    <span id="currentTime">0:00</span>
+    <span id="duration">0:00</span>
+  </div>
+
+  <div class="volume-container">
+    🔊 <input type="range" id="volumeSlider" min="0" max="1" step="0.01">
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="🔍 Cari lagu...">
+  </div>
+
+  <div class="playlist" id="playlist"></div>
+
+  <button class="theme-toggle" id="themeToggle">🌙 Mode Gelap</button>
+</div>
+
+<script>
+const audio = document.getElementById('audio');
+const cover = document.getElementById('cover');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const shuffleBtn = document.getElementById('shuffleBtn');
+const repeatBtn = document.getElementById('repeatBtn');
+const progressContainer = document.getElementById('progressContainer');
+const progress = document.getElementById('progress');
+const currentTimeEl = document.getElementById('currentTime');
+const durationEl = document.getElementById('duration');
+const volumeSlider = document.getElementById('volumeSlider');
+const playlistDiv = document.getElementById('playlist');
+const searchInput = document.getElementById('searchInput');
+const themeToggle = document.getElementById('themeToggle');
+const playerContainer = document.getElementById('playerContainer');
+
+let isPlaying = false;
+let isShuffle = false;
+let isRepeat = false;
+let currentIndex = 0;
+
+const tracks = [
+  {title:"Lagu 1 - Ceria", src:"lagu1.mp3", cover:"cover1.jpg"},
+  {title:"Lagu 2 - Happy Vibes", src:"lagu2.mp3", cover:"cover2.jpg"},
+  {title:"Lagu 3 - Chill Mood", src:"lagu3.mp3", cover:"cover3.jpg"},
+  {title:"Lagu 4 - Melody Pastel", src:"lagu4.mp3", cover:"cover4.jpg"},
+  {title:"Lagu 5 - Energi Soft", src:"lagu5.mp3", cover:"cover5.jpg"}
+];
+
+function renderPlaylist(filter=""){
+  playlistDiv.innerHTML="";
+  tracks.forEach((track,index)=>{
+    if(track.title.toLowerCase().includes(filter.toLowerCase())){
+      const div=document.createElement('div');
+      div.className='playlist-item';
+      if(index===currentIndex)div.classList.add('active');
+      div.textContent=track.title;
+      div.addEventListener('click',()=>loadTrack(index,true));
+      playlistDiv.appendChild(div);
+    }
+  });
+}
+
+function loadTrack(index,play=false){
+  currentIndex=index;
+  audio.src=tracks[index].src;
+  cover.style.backgroundImage=`url('${tracks[index].cover}')`;
+  renderPlaylist(searchInput.value);
+  if(play) playMusic();
+  saveState();
+}
+
+function playMusic(){
+  audio.play();
+  isPlaying=true;
+  playPauseBtn.textContent='⏸️';
+  playerContainer.classList.add('playing');
+}
+
+function pauseMusic(){
+  audio.pause();
+  isPlaying=false;
+  playPauseBtn.textContent='▶️';
+  playerContainer.classList.remove('playing');
+}
+
+playPauseBtn.addEventListener('click',()=>{ isPlaying?pauseMusic():playMusic(); });
+
+prevBtn.addEventListener('click',()=>{ prevTrack(); });
+nextBtn.addEventListener('click',()=>{ nextTrack(); });
+
+function prevTrack(){
+  currentIndex=(currentIndex-1+tracks.length)%tracks.length;
+  loadTrack(currentIndex,true);
+}
+
+function nextTrack(){
+  if(isShuffle){
+    currentIndex=Math.floor(Math.random()*tracks.length);
+  }else{
+    currentIndex=(currentIndex+1)%tracks.length;
+  }
+  loadTrack(currentIndex,true);
+}
+
+shuffleBtn.addEventListener('click',()=>{
+  isShuffle=!isShuffle;
+  shuffleBtn.style.background=isShuffle?'#f6c1e1':'var(--primary)';
+});
+
+repeatBtn.addEventListener('click',()=>{
+  isRepeat=!isRepeat;
+  repeatBtn.style.background=isRepeat?'#f6c1e1':'var(--primary)';
+});
+
+audio.addEventListener('ended',()=>{
+  if(isRepeat) playMusic();
+  else nextTrack();
+});
+
+// Progress
+audio.addEventListener('timeupdate',()=>{
+  const {currentTime,duration}=audio;
+  const percent=(currentTime/duration)*100;
+  progress.style.width=`${percent}%`;
+
+  currentTimeEl.textContent=formatTime(currentTime);
+  durationEl.textContent=isNaN(duration)?"0:00":formatTime(duration);
+});
+
+function formatTime(time){
+  const minutes=Math.floor(time/60);
+  const seconds=Math.floor(time%60).toString().padStart(2,'0');
+  return `${minutes}:${seconds}`;
+}
+
+progressContainer.addEventListener('click',(e)=>{
+  const width=progressContainer.clientWidth;
+  const clickX=e.offsetX;
+  const duration=audio.duration;
+  audio.currentTime=(clickX/width)*duration;
+});
+
+// Volume
+volumeSlider.addEventListener('input',()=>{
+  audio.volume=volumeSlider.value;
+  saveState();
+});
+
+// Search
+searchInput.addEventListener('input',(e)=>{
+  renderPlaylist(e.target.value);
+});
+
+// Theme toggle
+let darkMode=false;
+themeToggle.addEventListener('click',()=>{
+  darkMode=!darkMode;
+  document.body.classList.toggle('dark-mode',darkMode);
+  themeToggle.textContent=darkMode?'☀️':'🌙';
+});
+
+// Simpan state
+function saveState(){
+  localStorage.setItem('nelyPlayer',JSON.stringify({
+    index:currentIndex,
+    volume:audio.volume
+  }));
+}
+
+function loadState(){
+  const state=JSON.parse(localStorage.getItem('nelyPlayer'));
+  if(state){
+    currentIndex=state.index;
+    audio.volume=state.volume;
+    volumeSlider.value=state.volume;
+  }else{
+    audio.volume=0.5;
+    volumeSlider.value=0.5;
+  }
+}
+
+// Init
+loadState();
+loadTrack(currentIndex,false);
+renderPlaylist();
+</script>
+
+</body>
+</html>
